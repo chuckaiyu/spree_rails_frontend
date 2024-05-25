@@ -6,6 +6,16 @@
 <!--[if gt IE 9]><!--><html lang="<%= I18n.locale %>"><!--<![endif]-->
   <head data-hook="inside_head">
     <%= render partial: 'spree/shared/head' %>
+    <% if Rails.env.production? -%>
+      <!-- Google tag (gtag.js) -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4WVEFR4MV"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-R4WVEFR4MV');
+      </script>
+    <% end %>
   </head>
   <body class="<%= body_class %>" id="<%= @body_id || 'default' %>" data-hook="body">
     <%= render partial: 'spree/shared/checkout_header' %>
@@ -19,6 +29,24 @@
 
       <%= yield :templates %>
     </div>
+
+    <style type="text/css">
+      #loading { display: none; position: fixed; align-items: center; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99; }
+      .loader { border: 16px solid #f3f3f3; border-top: 16px solid #0074c2; border-radius: 50%; width: 80px; height: 80px; animation: spin 2s linear infinite; margin: 0 auto; z-index: 100; }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    <div id="loading">
+      <div class="loader"></div>
+    </div>
+    <script>
+      function loading(e) {
+        document.getElementById('loading').style.display = "flex";
+      }
+      document.querySelector("form").addEventListener("submit", loading);
+    </script>
 
     <footer>
       <%= render 'spree/shared/copyright' %>
