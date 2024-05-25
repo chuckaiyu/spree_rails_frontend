@@ -1,0 +1,90 @@
+<div id="paypal-button-container"></div>
+<p><%= Spree.t("paypal.redirect") %></p>
+<% param_prefix = "payment_source[#{payment_method.id}]" %>
+<%= hidden_field_tag "#{param_prefix}[order_id]", "", id: "paypal-checkout-order-id" %>
+<%= hidden_field_tag "#{param_prefix}[intent]", payment_method.intent %>
+<script src="https://www.paypal.com/sdk/js?client-id=<%= payment_method.preferred_paypal_client_id %>&components=buttons&intent=<%= payment_method.intent&.downcase %>"></script>
+<script>
+  var selectTargetValue = <%= payment_method.id %>;
+
+  function onSelected(event) {
+    if (event.target.value == selectTargetValue) {
+      document.querySelector("#checkout_form_payment [data-hook=buttons] .checkout-content-save-continue-button").disabled = true;
+      console.log("click " + event.target.value);
+    } else {
+      document.querySelector("#checkout_form_payment [data-hook=buttons] .checkout-content-save-continue-button").disabled = false;
+    }
+  }
+
+  window.onload = function() {
+    var selected = document.querySelector('input[type=radio][name="order[payments_attributes][][payment_method_id]"]:checked');
+
+    if (selected.value == selectTargetValue) {
+      document.querySelector("#checkout_form_payment [data-hook=buttons] .checkout-content-save-continue-button").disabled = true;
+      console.log("onload " + selected.value);
+    }
+
+    document.querySelectorAll('input[type=radio][name="order[payments_attributes][][payment_method_id]"]').forEach((input) => {
+      input.addEventListener('click', onSelected);
+    });
+  }
+
+  window.paypal.Buttons({
+    style: {
+      layout: 'horizontal',
+      color:  'gold',
+      shape:  'rect',
+      label:  'paypal',
+      tagline: false
+    },
+    async createOrder() {
+      console.log("createOrder");
+      try {
+        const response = await fetch("/paypal_checkout/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cart: [
+              {
+                order_number: "<%= @order&.number %>"
+              }
+            ],
+          }),
+        });
+
+        const orderData = await response.json();
+
+        if (orderData.id) {
+          return orderData.id;
+        } else {
+          const errorDetail = orderData?.details?.[0];
+          const errorMessage = errorDetail ? `${errorDetail.issue} ${errorDetail.description} (${orderData.debug_id})` : JSON.stringify(orderData);
+
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    onApprove(data) {
+      console.log("onApprove");
+      document.getElementById("paypal-checkout-order-id").value = data.orderID;
+      document.getElementById('loading').style.display = "block";
+      document.getElementById('checkout_form_payment').submit();
+    },
+    onInit(data, actions)  {
+      console.log("onInit");
+    },
+    onClick(){
+      console.log("onClick");
+    },
+    onError(err) {
+      console.log("onError");
+    },
+    onCancel(data) {
+      console.log("onCancel");
+    }
+  }).render('#paypal-button-container');
+</script>

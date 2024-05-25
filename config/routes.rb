@@ -39,4 +39,8 @@ Spree::Core::Engine.add_routes do
     get '/forbidden', to: 'errors#forbidden', as: :forbidden
     get '/unauthorized', to: 'errors#unauthorized', as: :unauthorized
   end
+
+  namespace :paypal_checkout do
+    resources :orders, only: :create
+  end
 end
